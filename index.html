@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0D2B21">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Your Session">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Build Your Session</title>
+<style>
+  :root{
+    --court-green:#1B4332;
+    --court-green-deep:#0D2B21;
+    --chalk:#F5F1E6;
+    --scoreboard-red:#D62828;
+    --wood-amber:#C97B2E;
+    --line:rgba(245,241,230,0.16);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--court-green-deep);
+    background-image:repeating-linear-gradient(90deg, rgba(245,241,230,0.03) 0 2px, transparent 2px 140px);
+    color:var(--chalk);
+    font-family:'Helvetica Neue', Arial, sans-serif;
+    min-height:100vh;
+    padding:24px 16px 60px;
+  }
+  .wrap{max-width:680px;margin:0 auto;}
+
+  .scoreboard{text-align:center;padding:18px 12px 22px;border-bottom:3px solid var(--wood-amber);margin-bottom:26px;}
+  .scoreboard h1{font-family:'Arial Black', Impact, sans-serif;font-size:clamp(26px,7vw,38px);letter-spacing:1.5px;margin:0 0 4px;text-transform:uppercase;}
+  .scoreboard .sub{font-size:12.5px;letter-spacing:3px;text-transform:uppercase;color:var(--wood-amber);font-weight:700;}
+
+  .section{background:var(--court-green);border-radius:var(--radius);padding:16px 16px 18px;margin-bottom:16px;border:1px solid var(--line);}
+  .section-head{margin-bottom:12px;}
+  .section-head h2{font-size:19px;margin:0 0 4px;font-weight:800;letter-spacing:.5px;}
+  .section-band{display:inline-flex;gap:10px;font-size:12px;color:rgba(245,241,230,0.75);flex-wrap:wrap;}
+  .band-chip{background:var(--court-green-deep);border:1px solid var(--line);border-radius:20px;padding:3px 10px;}
+
+  .row-block{margin-bottom:16px;}
+  .row-block:last-child{margin-bottom:0;}
+  .row-meta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;flex-wrap:wrap;gap:6px;}
+  .row-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--wood-amber);font-weight:700;}
+  .row-target{font-size:12px;color:rgba(245,241,230,0.6);}
+
+  .options{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;}
+  .option{
+    background:var(--court-green-deep);border:2px solid var(--line);border-radius:10px;
+    padding:11px 10px;cursor:pointer;text-align:left;color:var(--chalk);font-family:inherit;font-size:14px;font-weight:600;
+    transition:border-color .15s, transform .1s;
+  }
+  .option:hover{transform:translateY(-1px);}
+  .option.selected{border-color:var(--scoreboard-red);background:rgba(214,40,40,0.14);}
+  .option.selected::before{content:"✓ ";color:var(--scoreboard-red);}
+
+  .cat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;}
+  .cat-card{
+    background:var(--court-green-deep);border:2px solid var(--line);border-radius:10px;
+    padding:13px 12px;cursor:pointer;text-align:left;color:var(--chalk);font-family:inherit;
+  }
+  .cat-card.selected{border-color:var(--scoreboard-red);background:rgba(214,40,40,0.14);}
+  .cat-card .cat-title{font-weight:800;font-size:15px;margin-bottom:6px;display:block;}
+  .cat-card.selected .cat-title::before{content:"✓ ";color:var(--scoreboard-red);}
+  .cat-card ul{margin:0;padding-left:18px;font-size:12.5px;color:rgba(245,241,230,0.65);}
+  .cat-card li{margin-bottom:2px;}
+
+  .start-bar{position:sticky;bottom:14px;margin-top:20px;}
+  button.primary{
+    width:100%;background:var(--scoreboard-red);color:var(--chalk);border:none;border-radius:12px;
+    padding:16px;font-size:15px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;
+    cursor:pointer;box-shadow:0 6px 0 #9E1C1C;
+  }
+  button.primary:active{transform:translateY(3px);box-shadow:0 3px 0 #9E1C1C;}
+  button.primary:disabled{background:#4a5b54;box-shadow:0 6px 0 #33403b;cursor:not-allowed;}
+  .hint{text-align:center;font-size:12px;color:rgba(245,241,230,0.55);margin-top:8px;}
+
+  .picker.hidden, .workout.hidden{display:none;}
+
+  /* ---- Workout view ---- */
+  .workout-section{margin-bottom:20px;}
+  .workout-section h2{font-size:17px;margin:0 0 10px;font-weight:800;border-left:4px solid var(--wood-amber);padding-left:10px;}
+  .exercise-card{
+    background:var(--court-green);border:1px solid var(--line);border-radius:12px;
+    padding:14px 14px 12px;margin-bottom:10px;
+  }
+  .ex-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;}
+  .ex-name{font-weight:800;font-size:15.5px;}
+  .ex-target{font-size:12px;color:rgba(245,241,230,0.6);margin-top:2px;}
+  .weight-chip{
+    font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+    padding:4px 9px;border-radius:20px;white-space:nowrap;
+  }
+  .weight-chip.Light{background:rgba(245,241,230,0.15);color:var(--chalk);}
+  .weight-chip.Moderate{background:rgba(201,123,46,0.3);color:var(--wood-amber);}
+  .weight-chip.Heavy{background:rgba(214,40,40,0.25);color:#ff8b8b;}
+  .weight-chip.LightModerate{background:rgba(201,123,46,0.2);color:var(--wood-amber);}
+
+  .set-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .set-circles{display:flex;gap:7px;}
+  .set-circle{
+    width:30px;height:30px;border-radius:50%;border:2px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;
+    cursor:pointer;color:rgba(245,241,230,0.6);background:transparent;
+  }
+  .set-circle.filled{background:var(--wood-amber);border-color:var(--wood-amber);color:var(--court-green-deep);}
+  .rest-btn{
+    background:transparent;border:1.5px solid var(--line);color:rgba(245,241,230,0.8);
+    border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;
+  }
+  .rest-btn.running{border-color:var(--scoreboard-red);color:var(--scoreboard-red);}
+
+  .weight-log{display:flex;align-items:center;gap:8px;margin-top:10px;}
+  .weight-log label{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:rgba(245,241,230,0.55);font-weight:700;white-space:nowrap;}
+  .weight-log input{
+    background:var(--court-green-deep);border:1.5px solid var(--line);border-radius:8px;
+    color:var(--chalk);font-family:inherit;font-size:14px;font-weight:600;
+    padding:7px 9px;width:90px;
+  }
+  .weight-log input:focus{outline:none;border-color:var(--wood-amber);}
+  .weight-log span{font-size:12px;color:rgba(245,241,230,0.5);}
+
+  .done-screen{display:none;text-align:center;padding-top:10px;}
+  .done-screen.active{display:block;}
+  .done-screen .big{font-size:44px;margin-bottom:4px;}
+
+  .log{margin-top:24px;background:var(--court-green);border-radius:var(--radius);padding:14px 16px;text-align:left;}
+  .log h3{margin:0 0 10px;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--wood-amber);}
+  .log-entry{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--line);color:rgba(245,241,230,0.85);}
+  .log-entry:last-child{border-bottom:none;}
+  .empty-log{font-size:13px;color:rgba(245,241,230,0.5);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="scoreboard">
+    <div class="sub">You Choose</div>
+    <h1>Training Session</h1>
+  </div>
+
+  <!-- PICKER -->
+  <div class="picker" id="picker"></div>
+
+  <div class="start-bar picker" id="startBar">
+    <button class="primary" id="generateBtn" disabled>Generate My Workout</button>
+    <div class="hint" id="hint"></div>
+  </div>
+
+  <!-- WORKOUT -->
+  <div class="workout hidden" id="workoutView">
+    <div id="workoutSections"></div>
+    <div class="start-bar">
+      <button class="primary" id="finishBtn">Finish Session</button>
+    </div>
+  </div>
+
+  <!-- DONE -->
+  <div class="done-screen" id="doneScreen">
+    <div class="big">🏁</div>
+    <h1 style="margin:0;">Session Logged</h1>
+    <p style="color:rgba(245,241,230,0.7)">Great work. See it below.</p>
+    <button class="primary" id="restartBtn" style="margin-top:14px;">Build Another Session</button>
+  </div>
+
+  <div class="log" id="log">
+    <h3>Session History</h3>
+    <div id="logEntries" class="empty-log">No sessions logged yet.</div>
+  </div>
+
+</div>
+
+<script>
+// ---- Storage shim: standalone apps use localStorage instead of Claude's artifact-only window.storage ----
+window.storage = {
+  async set(key, value){ localStorage.setItem(key, value); return {key, value}; },
+  async get(key){
+    const v = localStorage.getItem(key);
+    if (v === null) throw new Error('not found');
+    return {key, value: v};
+  },
+  async delete(key){ localStorage.removeItem(key); return {key, deleted:true}; },
+  async list(prefix){
+    const keys = Object.keys(localStorage).filter(k => !prefix || k.startsWith(prefix));
+    return {keys, prefix};
+  }
+};
+
+// ---- Session definition, matching the table exactly ----
+const SESSION = {
+  prep: {
+    title: "Movement Prep",
+    setsReps: "1-2 sets · 8-10 reps or 30-45 sec hold",
+    weight: "Light",
+    rows: [
+      ["T spine roll + quad roll", "Hip flexor stretch + arm pit stretch", "Long lunge and reach"],
+      ["Banded side steps", "Banded kick backs", "Glute bridge with band"],
+      ["Wall sit", "Lunge hold", "Bent knee calf raises"],
+      ["Banded pull aparts", "Laying Ys", "Banded 'no moneys'"],
+    ],
+    maxSets: 2
+  },
+  set1: {
+    title: "Set 1",
+    rows: [
+      { options: ["Leg press", "Step up with knee drive", "Split squat"], setsReps: "2-4 sets · 6-8 reps", weight: "Heavy", maxSets: 4 },
+      { options: ["SA cable row lunge row", "Bent over row (DB or BB)", "Bar hang"], setsReps: "2-3 sets · 8-10 reps", weight: "Moderate", maxSets: 3 },
+      { options: ["Paloff press", "Swiss ball exchange", "Woodchop"], setsReps: "2-3 sets · 10-15 reps", weight: "Light", maxSets: 3 },
+    ]
+  },
+  set2: {
+    title: "Set 2",
+    rows: [
+      { options: ["Romanian Dead Lift", "SL Romanian Dead Lift", "Hip thrust variation"], setsReps: "2-4 sets · 6-8 reps", weight: "Heavy", maxSets: 4 },
+      { options: ["DB bench press", "SA DB bench press", "DB push press"], setsReps: "2-3 sets · 8-10 reps", weight: "Moderate", maxSets: 3 },
+      { options: ["Pojo jumps", "Skater jumps", "Pojo hops"], setsReps: "2-3 sets · 8-10 reps", weight: "Light", maxSets: 3 },
+    ]
+  },
+  finisher: {
+    title: "Set 3 — Finisher",
+    setsReps: "1-2 sets · 15-20 reps",
+    weight: "LightModerate",
+    weightLabel: "Light-Moderate",
+    maxSets: 2,
+    categories: {
+      "Arm finisher": ["Bicep curl and press", "Lateral raise", "Reverse flys", "Tricep rope push downs"],
+      "Core finisher": ["Side hold dips", "MB v sit twist", "Superman", "Dead bugs"],
+      "Leg finisher": ["Hamstring curls", "Leg extensions", "Calf raises", "Glute bridge"],
+    }
+  }
+};
+
+// selections state
+let sel = {
+  prep: new Array(SESSION.prep.rows.length).fill(null),
+  set1: new Array(SESSION.set1.rows.length).fill(null),
+  set2: new Array(SESSION.set2.rows.length).fill(null),
+  finisher: null // category key
+};
+
+const pickerEl = document.getElementById('picker');
+const generateBtn = document.getElementById('generateBtn');
+const hintEl = document.getElementById('hint');
+
+function renderPicker(){
+  pickerEl.innerHTML = '';
+
+  // Movement Prep
+  const prepSection = document.createElement('div');
+  prepSection.className = 'section';
+  prepSection.innerHTML = `
+    <div class="section-head">
+      <h2>${SESSION.prep.title}</h2>
+      <div class="section-band">
+        <span class="band-chip">${SESSION.prep.setsReps}</span>
+        <span class="band-chip">Weight: ${SESSION.prep.weight}</span>
+      </div>
+    </div>
+  `;
+  SESSION.prep.rows.forEach((opts, ri) => {
+    const rb = document.createElement('div');
+    rb.className = 'row-block';
+    rb.innerHTML = `<div class="row-meta"><span class="row-label">Choose 1 · Row ${ri+1}</span></div>`;
+    const optWrap = document.createElement('div');
+    optWrap.className = 'options';
+    opts.forEach((name, oi) => {
+      const btn = document.createElement('button');
+      btn.className = 'option';
+      btn.textContent = name;
+      btn.addEventListener('click', () => {
+        sel.prep[ri] = oi;
+        [...optWrap.children].forEach(c => c.classList.remove('selected'));
+        btn.classList.add('selected');
+        updateGenerateState();
+      });
+      optWrap.appendChild(btn);
+    });
+    rb.appendChild(optWrap);
+    prepSection.appendChild(rb);
+  });
+  pickerEl.appendChild(prepSection);
+
+  // Set 1 and Set 2 (same pattern, own sets/reps/weight per row)
+  ['set1','set2'].forEach(key => {
+    const data = SESSION[key];
+    const section = document.createElement('div');
+    section.className = 'section';
+    section.innerHTML = `<div class="section-head"><h2>${data.title}</h2></div>`;
+    data.rows.forEach((row, ri) => {
+      const rb = document.createElement('div');
+      rb.className = 'row-block';
+      rb.innerHTML = `
+        <div class="row-meta">
+          <span class="row-label">Choose 1 · Row ${ri+1}</span>
+          <span class="row-target">${row.setsReps} · ${row.weight}</span>
+        </div>`;
+      const optWrap = document.createElement('div');
+      optWrap.className = 'options';
+      row.options.forEach((name, oi) => {
+        const btn = document.createElement('button');
+        btn.className = 'option';
+        btn.textContent = name;
+        btn.addEventListener('click', () => {
+          sel[key][ri] = oi;
+          [...optWrap.children].forEach(c => c.classList.remove('selected'));
+          btn.classList.add('selected');
+          updateGenerateState();
+        });
+        optWrap.appendChild(btn);
+      });
+      rb.appendChild(optWrap);
+      section.appendChild(rb);
+    });
+    pickerEl.appendChild(section);
+  });
+
+  // Finisher
+  const finSection = document.createElement('div');
+  finSection.className = 'section';
+  finSection.innerHTML = `
+    <div class="section-head">
+      <h2>${SESSION.finisher.title}</h2>
+      <div class="section-band">
+        <span class="band-chip">${SESSION.finisher.setsReps}</span>
+        <span class="band-chip">Weight: ${SESSION.finisher.weightLabel}</span>
+      </div>
+    </div>
+    <div class="row-meta"><span class="row-label">Choose one finisher</span></div>
+  `;
+  const catWrap = document.createElement('div');
+  catWrap.className = 'cat-cards';
+  Object.entries(SESSION.finisher.categories).forEach(([catName, exercises]) => {
+    const card = document.createElement('button');
+    card.className = 'cat-card';
+    card.innerHTML = `<span class="cat-title">${catName}</span><ul>${exercises.map(e=>`<li>${e}</li>`).join('')}</ul>`;
+    card.addEventListener('click', () => {
+      sel.finisher = catName;
+      [...catWrap.children].forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      updateGenerateState();
+    });
+    catWrap.appendChild(card);
+  });
+  finSection.appendChild(catWrap);
+  pickerEl.appendChild(finSection);
+}
+
+function updateGenerateState(){
+  const prepDone = sel.prep.every(s => s !== null);
+  const set1Done = sel.set1.every(s => s !== null);
+  const set2Done = sel.set2.every(s => s !== null);
+  const finDone = sel.finisher !== null;
+  const allDone = prepDone && set1Done && set2Done && finDone;
+  generateBtn.disabled = !allDone;
+  const remaining = [
+    !prepDone && "Movement Prep",
+    !set1Done && "Set 1",
+    !set2Done && "Set 2",
+    !finDone && "Finisher"
+  ].filter(Boolean);
+  hintEl.textContent = allDone
+    ? "Every section is set — ready to build your session"
+    : `Still need a pick in: ${remaining.join(', ')}`;
+}
+
+// ---- Build final workout ----
+const workoutView = document.getElementById('workoutView');
+const workoutSectionsEl = document.getElementById('workoutSections');
+let workoutData = []; // {sectionTitle, exercises:[{name, setsReps, weight, weightLabel, maxSets, completed}]}
+
+function buildWorkout(){
+  workoutData = [];
+
+  workoutData.push({
+    title: SESSION.prep.title,
+    exercises: SESSION.prep.rows.map((opts, ri) => ({
+      name: opts[sel.prep[ri]],
+      setsReps: SESSION.prep.setsReps,
+      weight: SESSION.prep.weight,
+      weightLabel: SESSION.prep.weight,
+      maxSets: SESSION.prep.maxSets,
+      completed: 0
+    }))
+  });
+
+  ['set1','set2'].forEach(key => {
+    const data = SESSION[key];
+    workoutData.push({
+      title: data.title,
+      exercises: data.rows.map((row, ri) => ({
+        name: row.options[sel[key][ri]],
+        setsReps: row.setsReps,
+        weight: row.weight,
+        weightLabel: row.weight,
+        maxSets: row.maxSets,
+        completed: 0
+      }))
+    });
+  });
+
+  const finExercises = SESSION.finisher.categories[sel.finisher];
+  workoutData.push({
+    title: `${SESSION.finisher.title} — ${sel.finisher}`,
+    exercises: finExercises.map(name => ({
+      name,
+      setsReps: SESSION.finisher.setsReps,
+      weight: SESSION.finisher.weight,
+      weightLabel: SESSION.finisher.weightLabel,
+      maxSets: SESSION.finisher.maxSets,
+      completed: 0
+    }))
+  });
+}
+
+function renderWorkout(){
+  workoutSectionsEl.innerHTML = '';
+  workoutData.forEach((sec, si) => {
+    const secEl = document.createElement('div');
+    secEl.className = 'workout-section';
+    secEl.innerHTML = `<h2>${sec.title}</h2>`;
+    sec.exercises.forEach((ex, ei) => {
+      const card = document.createElement('div');
+      card.className = 'exercise-card';
+      card.innerHTML = `
+        <div class="ex-top">
+          <div>
+            <div class="ex-name">${ex.name}</div>
+            <div class="ex-target">${ex.setsReps}</div>
+          </div>
+          <span class="weight-chip ${ex.weight.replace(/\s/g,'')}">${ex.weightLabel}</span>
+        </div>
+        <div class="set-row">
+          <div class="set-circles" data-si="${si}" data-ei="${ei}"></div>
+          <button class="rest-btn" data-si="${si}" data-ei="${ei}">Rest 60s</button>
+        </div>
+        <div class="weight-log">
+          <label for="w-${si}-${ei}">Weight used</label>
+          <input type="text" inputmode="decimal" id="w-${si}-${ei}" placeholder="e.g. 20 kg" value="${ex.weightUsed || ''}">
+          <span>optional</span>
+        </div>
+      `;
+      const circlesWrap = card.querySelector('.set-circles');
+      for (let i=0;i<ex.maxSets;i++){
+        const c = document.createElement('button');
+        c.className = 'set-circle';
+        c.textContent = i+1;
+        c.addEventListener('click', () => {
+          const isFilled = c.classList.contains('filled');
+          if (!isFilled){
+            c.classList.add('filled');
+            ex.completed = Math.max(ex.completed, i+1);
+          } else {
+            c.classList.remove('filled');
+            ex.completed = i;
+            // unfill subsequent circles too
+            [...circlesWrap.children].forEach((cc, idx) => { if (idx > i) cc.classList.remove('filled'); });
+          }
+        });
+        circlesWrap.appendChild(c);
+      }
+      const restBtn = card.querySelector('.rest-btn');
+      restBtn.addEventListener('click', () => startRestTimer(restBtn));
+      const weightInput = card.querySelector('.weight-log input');
+      weightInput.addEventListener('input', () => { ex.weightUsed = weightInput.value; });
+      secEl.appendChild(card);
+    });
+    workoutSectionsEl.appendChild(secEl);
+  });
+}
+
+function startRestTimer(btn){
+  if (btn.dataset.running === '1') return;
+  btn.dataset.running = '1';
+  btn.classList.add('running');
+  let t = 60;
+  btn.textContent = `Resting ${t}s`;
+  const id = setInterval(() => {
+    t--;
+    if (t <= 0){
+      clearInterval(id);
+      btn.textContent = 'Rest 60s';
+      btn.classList.remove('running');
+      btn.dataset.running = '0';
+      return;
+    }
+    btn.textContent = `Resting ${t}s`;
+  }, 1000);
+}
+
+document.getElementById('generateBtn').addEventListener('click', () => {
+  buildWorkout();
+  renderWorkout();
+  document.getElementById('picker').classList.add('hidden');
+  document.getElementById('startBar').style.display = 'none';
+  workoutView.classList.remove('hidden');
+});
+
+document.getElementById('finishBtn').addEventListener('click', () => {
+  workoutView.classList.add('hidden');
+  document.getElementById('doneScreen').classList.add('active');
+  logSession();
+});
+
+document.getElementById('restartBtn').addEventListener('click', () => {
+  document.getElementById('doneScreen').classList.remove('active');
+  sel = {
+    prep: new Array(SESSION.prep.rows.length).fill(null),
+    set1: new Array(SESSION.set1.rows.length).fill(null),
+    set2: new Array(SESSION.set2.rows.length).fill(null),
+    finisher: null
+  };
+  renderPicker();
+  updateGenerateState();
+  document.getElementById('picker').classList.remove('hidden');
+  document.getElementById('startBar').style.display = 'block';
+});
+
+// ---- Persistent session log ----
+const logEntriesEl = document.getElementById('logEntries');
+
+async function logSession(){
+  const allExercises = workoutData.flatMap(s => s.exercises);
+  const totalPlannedSets = allExercises.reduce((a,e)=>a+e.maxSets,0);
+  const totalCompletedSets = allExercises.reduce((a,e)=>a+e.completed,0);
+  const entry = {
+    date: new Date().toISOString(),
+    finisher: sel.finisher,
+    exercises: allExercises.map(e => ({ name: e.name, weightUsed: e.weightUsed || '' })),
+    totalPlannedSets,
+    totalCompletedSets
+  };
+  try {
+    const key = 'session:' + Date.now();
+    await window.storage.set(key, JSON.stringify(entry), false);
+  } catch(e){
+    console.error('Could not save session', e);
+  }
+  loadLog();
+}
+
+async function loadLog(){
+  try {
+    const list = await window.storage.list('session:', false);
+    if (!list || !list.keys || list.keys.length === 0){
+      logEntriesEl.innerHTML = '<div class="empty-log">No sessions logged yet.</div>';
+      return;
+    }
+    const entries = [];
+    for (const k of list.keys){
+      try {
+        const r = await window.storage.get(k, false);
+        if (r) entries.push(JSON.parse(r.value));
+      } catch(e){ /* skip */ }
+    }
+    entries.sort((a,b) => new Date(b.date) - new Date(a.date));
+    logEntriesEl.innerHTML = '';
+    entries.slice(0, 8).forEach(en => {
+      const row = document.createElement('div');
+      row.className = 'log-entry';
+      row.style.flexDirection = 'column';
+      row.style.alignItems = 'stretch';
+      row.style.gap = '4px';
+      const d = new Date(en.date);
+      const weighted = (en.exercises || []).filter(e => e.weightUsed);
+      const weightsLine = weighted.length
+        ? weighted.map(e => `${e.name}: ${e.weightUsed}`).join(' · ')
+        : '';
+      row.innerHTML = `
+        <div style="display:flex;justify-content:space-between;">
+          <span>${d.toLocaleDateString()} · ${en.finisher || ''}</span>
+          <span>${en.totalCompletedSets}/${en.totalPlannedSets} sets</span>
+        </div>
+        ${weightsLine ? `<div style="font-size:11.5px;color:rgba(245,241,230,0.5);">${weightsLine}</div>` : ''}
+      `;
+      logEntriesEl.appendChild(row);
+    });
+    if (entries.length === 0){
+      logEntriesEl.innerHTML = '<div class="empty-log">No sessions logged yet.</div>';
+    }
+  } catch(e){
+    logEntriesEl.innerHTML = '<div class="empty-log">No sessions logged yet.</div>';
+  }
+}
+
+// init
+renderPicker();
+updateGenerateState();
+loadLog();
+
+// ---- PWA install support ----
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(e => console.warn('SW registration failed', e));
+  });
+}
+</script>
+</body>
+</html>
